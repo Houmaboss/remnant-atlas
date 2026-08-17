@@ -35,15 +35,15 @@
 <main>
   <section class="view active" id="worldView">
     <div class="world-wrap" id="worldWrap">
+      <div class="world-map-controls">
+        <button class="btn" id="zoomOutBtn" title="Zoom out">−</button>
+        <button class="btn zoom-readout" id="zoom100Btn" title="Reset to 100%">100%</button>
+        <button class="btn" id="zoomInBtn" title="Zoom in">+</button>
+        <button class="btn" id="fitBtn" title="Fit the entire world map to the available screen">Fit</button>
+        <button class="btn" id="labelToggleBtn">Hide Names</button>
+      </div>
       <div class="world-viewport" id="worldViewport">
       <div class="world-canvas" id="worldCanvas">
-        <div class="world-map-controls">
-          <button class="btn" id="zoomOutBtn" title="Zoom out">−</button>
-          <button class="btn zoom-readout" id="zoom100Btn" title="Reset to 100%">100%</button>
-          <button class="btn" id="zoomInBtn" title="Zoom in">+</button>
-          <button class="btn" id="fitBtn" title="Fit the entire world map to the available screen">Fit</button>
-          <button class="btn" id="labelToggleBtn">Hide Names</button>
-        </div>
         <img class="world-img" id="worldImg" alt="Soul's Remnant world map">
         <div class="place-hint">Click anywhere to place a location dot</div>
         <div id="worldDots"></div>
