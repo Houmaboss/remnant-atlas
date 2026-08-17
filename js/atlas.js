@@ -13,27 +13,18 @@ const selected=()=>state?.zones?.find(z=>z.id===selectedId);
 
 async function init(){
   let seed = window.REMNANT_ATLAS_SEED ? structuredClone(window.REMNANT_ATLAS_SEED) : null;
-
-  // On GitHub Pages / a local web server, prefer data/atlas.json so the
-  // repository's JSON remains the public source of truth.
   if(location.protocol !== 'file:'){
     try{
       const response = await fetch('data/atlas.json', {cache:'no-store'});
       if(response.ok) seed = await response.json();
-    }catch(err){
-      console.warn('Could not fetch data/atlas.json; using embedded fallback.', err);
-    }
+    }catch(err){ console.warn('Could not fetch data/atlas.json; using embedded fallback.', err); }
   }
-
   if(!seed) throw new Error('No atlas seed data could be loaded.');
-
   const local=localStorage.getItem(STORAGE_KEY);
   state=window.RemnantMigrations.migrate(local?JSON.parse(local):seed);
   selectedId=state.zones?.[0]?.id||'';
   $('worldImg').src=state.world?.image||'assets/world/world-surface.webp';
-  bindStatic();
-  applyLabelMode();
-  render();
+  bindStatic(); applyLabelMode(); render();
   requestAnimationFrame(()=>setWorldZoom(worldZoom));
 }
 function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));render()}
@@ -43,105 +34,30 @@ function render(){
   bindRows();bindDots();renderDetail();
 }
 function bindRows(){document.querySelectorAll('.zone-row').forEach(el=>el.onclick=()=>openZone(el.dataset.id))}
-function bindDots(){
- document.querySelectorAll('.world-dot').forEach(dot=>{
-  const btn=dot.querySelector('button');let pid=null,sx=0,sy=0,startX=0,startY=0,moved=false;
-  btn.onpointerdown=e=>{if(!document.body.classList.contains('admin'))return;const z=state.zones.find(x=>x.id===dot.dataset.id);e.preventDefault();pid=e.pointerId;btn.setPointerCapture(pid);sx=e.clientX;sy=e.clientY;startX=z.x;startY=z.y;moved=false};
-  btn.onpointermove=e=>{if(pid===null||!btn.hasPointerCapture(pid))return;const r=$('worldCanvas').getBoundingClientRect(),z=state.zones.find(x=>x.id===dot.dataset.id);if(Math.abs(e.clientX-sx)>3||Math.abs(e.clientY-sy)>3)moved=true;z.x=Math.max(1,Math.min(99,startX+(e.clientX-sx)/r.width*100));z.y=Math.max(1,Math.min(99,startY+(e.clientY-sy)/r.height*100));dot.style.left=z.x+'%';dot.style.top=z.y+'%'};
-  btn.onpointerup=e=>{if(pid!==null){try{btn.releasePointerCapture(pid)}catch{}pid=null}if(moved){selectedId=dot.dataset.id;persist()}else openZone(dot.dataset.id)};
-  btn.onclick=()=>{if(!document.body.classList.contains('admin'))openZone(dot.dataset.id)};
- });
-}
+function bindDots(){document.querySelectorAll('.world-dot').forEach(dot=>{const btn=dot.querySelector('button');let pid=null,sx=0,sy=0,startX=0,startY=0,moved=false;btn.onpointerdown=e=>{if(!document.body.classList.contains('admin'))return;const z=state.zones.find(x=>x.id===dot.dataset.id);e.preventDefault();pid=e.pointerId;btn.setPointerCapture(pid);sx=e.clientX;sy=e.clientY;startX=z.x;startY=z.y;moved=false};btn.onpointermove=e=>{if(pid===null||!btn.hasPointerCapture(pid))return;const r=$('worldCanvas').getBoundingClientRect(),z=state.zones.find(x=>x.id===dot.dataset.id);if(Math.abs(e.clientX-sx)>3||Math.abs(e.clientY-sy)>3)moved=true;z.x=Math.max(1,Math.min(99,startX+(e.clientX-sx)/r.width*100));z.y=Math.max(1,Math.min(99,startY+(e.clientY-sy)/r.height*100));dot.style.left=z.x+'%';dot.style.top=z.y+'%'};btn.onpointerup=e=>{if(pid!==null){try{btn.releasePointerCapture(pid)}catch{}pid=null}if(moved){selectedId=dot.dataset.id;persist()}else openZone(dot.dataset.id)};btn.onclick=()=>{if(!document.body.classList.contains('admin'))openZone(dot.dataset.id)}})}
 function showView(v){$('worldView').classList.toggle('active',v==='world');$('detailView').classList.toggle('active',v==='detail')}
 function openZone(id){selectedId=id;render();showView('detail')}
-function renderDetail(){
- const z=selected();if(!z)return;
- $('miniTitle').textContent=z.name;$('zoneTitle').textContent=z.name;$('zoneMeta').textContent=z.region||'Uncategorized';$('zoneDesc').textContent=z.description||'No description yet.';
- $('miniImg').src=z.minimap||'';$('subDots').innerHTML=(z.submarkers||[]).map(m=>`<button class="subdot" title="${esc(m.label)}" style="left:${m.x}%;top:${m.y}%;--dot:${m.color}"></button>`).join('');
- $('subList').innerHTML=(z.submarkers||[]).length?(z.submarkers||[]).map(m=>`<div class="marker-item"><strong>${esc(m.label)}</strong><small>${esc(m.type)} · ${esc(m.notes||'No notes')}</small></div>`).join(''):'<div class="note">No minimap markers yet.</div>';
-}
-
+function renderDetail(){const z=selected();if(!z)return;$('miniTitle').textContent=z.name;$('zoneTitle').textContent=z.name;$('zoneMeta').textContent=z.region||'Uncategorized';$('zoneDesc').textContent=z.description||'No description yet.';$('miniImg').src=z.minimap||'';$('subDots').innerHTML=(z.submarkers||[]).map(m=>`<button class="subdot" title="${esc(m.label)}" style="left:${m.x}%;top:${m.y}%;--dot:${m.color}"></button>`).join('');$('subList').innerHTML=(z.submarkers||[]).length?(z.submarkers||[]).map(m=>`<div class="marker-item"><strong>${esc(m.label)}</strong><small>${esc(m.type)} · ${esc(m.notes||'No notes')}</small></div>`).join(''):'<div class="note">No minimap markers yet.</div>'}
 function setWorldZoom(value, clientX=null, clientY=null){
-  const wrap=$('worldWrap'), canvas=$('worldCanvas');
+  const wrap=$('worldWrap'),canvas=$('worldCanvas');
   const old=worldZoom;
   worldZoom=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,Number(value.toFixed(3))));
   document.body.dataset.fitMode='false';
-
-  let beforeX=0,beforeY=0;
-  if(clientX!==null&&clientY!==null){
-    const r=canvas.getBoundingClientRect();
-    beforeX=(clientX-r.left)/old;
-    beforeY=(clientY-r.top)/old;
-  }
-
+  if(clientX===null||clientY===null){const wr=wrap.getBoundingClientRect();clientX=wr.left+wr.width/2;clientY=wr.top+wr.height/2;}
+  const r=canvas.getBoundingClientRect();
+  const beforeX=(clientX-r.left)/old;
+  const beforeY=(clientY-r.top)/old;
   canvas.style.transform=`scale(${worldZoom})`;
   $('worldViewport').style.width=`${Math.max(100,worldZoom*100)}%`;
   $('worldViewport').style.height=`${Math.max(100,worldZoom*100)}%`;
   $('zoom100Btn').textContent=Math.round(worldZoom*100)+'%';
   localStorage.setItem('remnant-atlas-world-zoom',String(worldZoom));
-
-  if(clientX!==null&&clientY!==null){
-    requestAnimationFrame(()=>{
-      const r=wrap.getBoundingClientRect();
-      wrap.scrollLeft=Math.max(0,beforeX*worldZoom-(clientX-r.left));
-      wrap.scrollTop=Math.max(0,beforeY*worldZoom-(clientY-r.top));
-    });
-  }
+  requestAnimationFrame(()=>{const wr=wrap.getBoundingClientRect();wrap.scrollLeft=Math.max(0,beforeX*worldZoom-(clientX-wr.left));wrap.scrollTop=Math.max(0,beforeY*worldZoom-(clientY-wr.top));});
 }
-
-function fitWorldToScreen(){
-  const wrap=$('worldWrap'), canvas=$('worldCanvas');
-  if(!wrap||!canvas)return;
-  const baseW=1000;
-  const baseH=1000*(1056/1076);
-  const availableW=Math.max(200,wrap.clientWidth-36);
-  const availableH=Math.max(200,window.innerHeight-wrap.getBoundingClientRect().top-24);
-  const fit=Math.min(availableW/baseW,availableH/baseH);
-  worldZoom=Math.max(MIN_ZOOM,Math.min(1,fit));
-  canvas.style.transform=`scale(${worldZoom})`;
-  $('worldViewport').style.width='100%';
-  $('worldViewport').style.height='100%';
-  $('zoom100Btn').textContent=Math.round(worldZoom*100)+'%';
-  wrap.scrollLeft=0;wrap.scrollTop=0;
-  document.body.dataset.fitMode='true';
-  localStorage.setItem('remnant-atlas-world-zoom',String(worldZoom));
-}
-
-function bindWorldPan(){
-  const wrap=$('worldWrap');
-  let pointerId=null,startX=0,startY=0,startLeft=0,startTop=0;
-
-  wrap.addEventListener('pointerdown',e=>{
-    if(e.button!==0) return;
-    if(e.target.closest('.world-map-controls,.world-dot,button,input,select,textarea,dialog')) return;
-    if(placingWorld) return;
-    pointerId=e.pointerId;
-    startX=e.clientX;startY=e.clientY;
-    startLeft=wrap.scrollLeft;startTop=wrap.scrollTop;
-    wrap.setPointerCapture(pointerId);
-    wrap.classList.add('panning');
-  });
-
-  wrap.addEventListener('pointermove',e=>{
-    if(pointerId===null || !wrap.hasPointerCapture(pointerId)) return;
-    wrap.scrollLeft=startLeft-(e.clientX-startX);
-    wrap.scrollTop=startTop-(e.clientY-startY);
-  });
-
-  const stopPan=()=>{
-    if(pointerId===null) return;
-    try{wrap.releasePointerCapture(pointerId)}catch{}
-    pointerId=null;
-    wrap.classList.remove('panning');
-  };
-  wrap.addEventListener('pointerup',stopPan);
-  wrap.addEventListener('pointercancel',stopPan);
-}
-
+function fitWorldToScreen(){const wrap=$('worldWrap'),canvas=$('worldCanvas');if(!wrap||!canvas)return;const baseW=1000,baseH=1000*(1056/1076),availableW=Math.max(200,wrap.clientWidth-36),availableH=Math.max(200,window.innerHeight-wrap.getBoundingClientRect().top-24),fit=Math.min(availableW/baseW,availableH/baseH);worldZoom=Math.max(MIN_ZOOM,Math.min(1,fit));canvas.style.transform=`scale(${worldZoom})`;$('worldViewport').style.width='100%';$('worldViewport').style.height='100%';$('zoom100Btn').textContent=Math.round(worldZoom*100)+'%';wrap.scrollLeft=0;wrap.scrollTop=0;document.body.dataset.fitMode='true';localStorage.setItem('remnant-atlas-world-zoom',String(worldZoom))}
+function bindWorldPan(){const wrap=$('worldWrap');let pointerId=null,startX=0,startY=0,startLeft=0,startTop=0;wrap.addEventListener('pointerdown',e=>{if(e.button!==0)return;if(e.target.closest('.world-map-controls,.world-dot,button,input,select,textarea,dialog'))return;if(placingWorld)return;pointerId=e.pointerId;startX=e.clientX;startY=e.clientY;startLeft=wrap.scrollLeft;startTop=wrap.scrollTop;wrap.setPointerCapture(pointerId);wrap.classList.add('panning')});wrap.addEventListener('pointermove',e=>{if(pointerId===null||!wrap.hasPointerCapture(pointerId))return;wrap.scrollLeft=startLeft-(e.clientX-startX);wrap.scrollTop=startTop-(e.clientY-startY)});const stopPan=()=>{if(pointerId===null)return;try{wrap.releasePointerCapture(pointerId)}catch{}pointerId=null;wrap.classList.remove('panning')};wrap.addEventListener('pointerup',stopPan);wrap.addEventListener('pointercancel',stopPan)}
 function applyLabelMode(){document.body.classList.toggle('labels-hidden',!labelsVisible);$('labelToggleBtn').textContent=labelsVisible?'Hide Names':'Show Names';localStorage.setItem('remnant-atlas-labels-visible',String(labelsVisible))}
-function editSelected(){
- const z=selected();if(!z)return;$('zoneDialogTitle').textContent='Edit Location';$('zoneId').value=z.id;$('zoneX').value=z.x;$('zoneY').value=z.y;$('zoneName').value=z.name;$('zoneRegion').value=z.region||'';$('zoneDescription').value=z.description||'';const r=document.querySelector(`input[name=zoneColor][value="${z.color}"]`);if(r)r.checked=true;$('zoneDialog').showModal();
-}
+function editSelected(){const z=selected();if(!z)return;$('zoneDialogTitle').textContent='Edit Location';$('zoneId').value=z.id;$('zoneX').value=z.x;$('zoneY').value=z.y;$('zoneName').value=z.name;$('zoneRegion').value=z.region||'';$('zoneDescription').value=z.description||'';const r=document.querySelector(`input[name=zoneColor][value="${z.color}"]`);if(r)r.checked=true;$('zoneDialog').showModal()}
 function bindStatic(){
  $('backBtn').onclick=()=>showView('world');
  $('labelToggleBtn').onclick=()=>{labelsVisible=!labelsVisible;applyLabelMode()};
@@ -149,13 +65,9 @@ function bindStatic(){
  $('zoomOutBtn').onclick=()=>setWorldZoom(worldZoom-ZOOM_STEP);
  $('zoom100Btn').onclick=()=>setWorldZoom(1);
  $('fitBtn').onclick=fitWorldToScreen;
- $('worldWrap').addEventListener('wheel',e=>{
-   if(!(e.ctrlKey||e.metaKey)) return;
-   e.preventDefault();
-   setWorldZoom(worldZoom+(e.deltaY<0?ZOOM_STEP:-ZOOM_STEP), e.clientX, e.clientY);
- },{passive:false});
+ $('worldWrap').addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;e.preventDefault();setWorldZoom(worldZoom+(e.deltaY<0?ZOOM_STEP:-ZOOM_STEP),e.clientX,e.clientY)},{passive:false});
  bindWorldPan();
- window.addEventListener('resize',()=>{ if(document.body.dataset.fitMode==='true') fitWorldToScreen(); });
+ window.addEventListener('resize',()=>{if(document.body.dataset.fitMode==='true')fitWorldToScreen()});
  $('adminBtn').onclick=()=>document.body.classList.contains('admin')?lockAdmin():$('adminDialog').showModal();
  $('unlockBtn').onclick=()=>{if($('pinInput').value===PIN){document.body.classList.add('admin');$('adminBtn').textContent='Exit Admin';$('pinInput').value='';$('adminDialog').close()}else{$('pinInput').value='';$('pinInput').placeholder='Incorrect PIN'}};
  document.querySelectorAll('.close').forEach(b=>b.onclick=()=>b.closest('dialog').close());
