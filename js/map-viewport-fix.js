@@ -88,7 +88,8 @@
       if(!(e.ctrlKey||e.metaKey))return;
       e.preventDefault();
       e.stopImmediatePropagation();
-      window.setWorldZoom(worldZoom+(e.deltaY<0?.15:-.15),e.clientX,e.clientY);
+      const delta=e.deltaY<0 ? .15 : -.15;
+      window.setWorldZoom(worldZoom+delta,e.clientX,e.clientY);
     },{capture:true,passive:false});
 
     window.addEventListener('resize',()=>{
