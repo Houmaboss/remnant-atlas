@@ -11,7 +11,7 @@
   `;
   document.head.appendChild(style);
 
-  window.addEventListener('load',()=>{
+  function boot(){
     const wrap=document.getElementById('worldWrap');
     const viewport=document.getElementById('worldViewport');
     const canvas=document.getElementById('worldCanvas');
@@ -97,5 +97,8 @@
     });
 
     requestAnimationFrame(()=>requestAnimationFrame(()=>window.fitWorldToScreen()));
-  });
+  }
+
+  if(document.readyState==='complete')boot();
+  else window.addEventListener('load',boot,{once:true});
 })();
