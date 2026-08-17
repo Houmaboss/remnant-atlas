@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "description": "Remnant Atlas static data schema. Future builds should migrate older schema versions rather than replace data.",
+  "zoneFields": [
+    "id",
+    "name",
+    "region",
+    "description",
+    "x",
+    "y",
+    "color",
+    "minimap",
+    "submarkers"
+  ]
+}

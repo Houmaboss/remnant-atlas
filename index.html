@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Remnant Atlas</title>
+<link rel="stylesheet" href="css/atlas.css">
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="logo"><b>R</b></div><div><h1>Remnant Atlas</h1><small>Community exploration atlas</small></div></div>
+  <div class="spacer"></div>
+  <span class="admin-tag">◆ Admin Mode</span>
+  <div class="actions">
+    <button class="btn" id="exportBtn">Export Data</button>
+    <button class="btn" id="importBtn">Import Data</button>
+    <input id="importFile" type="file" accept=".json" hidden>
+    <button class="btn" id="adminBtn">Admin Mode</button>
+  </div>
+</header>
+
+<div class="layout">
+<aside>
+  <h2>Locations</h2>
+  <p>World dots are the primary navigation. Local edits stay in this browser until you export them.</p>
+  <div class="panel"><div class="ptitle">Mapped zones</div><div class="pbody"><div class="zone-list" id="zoneList"></div></div></div>
+  <div class="panel admin-only"><div class="ptitle">World editor</div><div class="pbody admin-tools">
+    <button class="btn primary" id="placeWorldBtn">+ Place Location Dot</button>
+    <button class="btn" id="editZoneBtn">Edit Selected</button>
+    <button class="btn danger" id="deleteZoneBtn">Delete Selected</button>
+  </div></div>
+</aside>
+
+<main>
+  <section class="view active" id="worldView">
+    <div class="world-wrap" id="worldWrap">
+      <div class="world-viewport" id="worldViewport">
+      <div class="world-canvas" id="worldCanvas">
+        <div class="world-map-controls">
+          <button class="btn" id="zoomOutBtn" title="Zoom out">−</button>
+          <button class="btn zoom-readout" id="zoom100Btn" title="Reset to 100%">100%</button>
+          <button class="btn" id="zoomInBtn" title="Zoom in">+</button>
+          <button class="btn" id="fitBtn" title="Fit the entire world map to the available screen">Fit</button>
+          <button class="btn" id="labelToggleBtn">Hide Names</button>
+        </div>
+        <img class="world-img" id="worldImg" alt="Soul's Remnant world map">
+        <div class="place-hint">Click anywhere to place a location dot</div>
+        <div id="worldDots"></div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="detailView">
+    <div class="detail">
+      <button class="btn back" id="backBtn">← World Map</button>
+      <div class="detail-grid">
+        <div>
+          <div class="minimap-shell">
+            <div class="minimap-title"><span id="miniTitle">Location</span><span>⋮ ×</span></div>
+            <div class="minimap-frame" id="miniFrame">
+              <img id="miniImg" alt="Selected location minimap">
+              <canvas id="miniCanvas"></canvas>
+              <div id="subDots"></div>
+            </div>
+          </div>
+
+          <div class="controls admin-only">
+            <button class="btn primary" id="workshopBtn">Open Minimap Workshop</button>
+            <button class="btn" id="placeSubBtn">+ Add Minimap Dot</button>
+          </div>
+        </div>
+
+        <div class="info">
+          <div class="meta" id="zoneMeta"></div>
+          <h2 id="zoneTitle"></h2>
+          <div class="desc" id="zoneDesc"></div>
+          <div class="admin-only controls"><button class="btn" id="editZoneBtn2">Edit Location</button></div>
+          <h3>Map Notes / Markers</h3>
+          <div class="note">Minimap dots can represent hidden maps, exits, NPCs, bosses, quests, or notes.</div>
+          <div class="marker-list" id="subList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+</div>
+
+<dialog id="adminDialog">
+ <div class="dhead"><h3>Enter Admin Mode</h3><button class="btn close">×</button></div>
+ <div class="dbody"><label><div class="lab">PIN</div><input id="pinInput" type="password" placeholder="Default: 0420"></label><div class="note">This is only a local convenience lock. GitHub Pages is static hosting, so this is not secure server authentication.</div></div>
+ <div class="dactions"><button class="btn close">Cancel</button><button class="btn primary" id="unlockBtn">Unlock</button></div>
+</dialog>
+
+<dialog id="zoneDialog">
+ <div class="dhead"><h3 id="zoneDialogTitle">Add Location</h3><button class="btn close">×</button></div>
+ <div class="dbody">
+   <input id="zoneId" type="hidden"><input id="zoneX" type="hidden"><input id="zoneY" type="hidden">
+   <div class="two"><label><div class="lab">Location name</div><input id="zoneName"></label><label><div class="lab">Region / category</div><input id="zoneRegion"></label></div>
+   <label><div class="lab">Description</div><textarea id="zoneDescription"></textarea></label>
+   <div><div class="lab">Dot color</div><div class="color-grid">
+     <label class="color-opt" style="--c:#65c887"><input type="radio" name="zoneColor" value="#65c887" checked><span></span></label>
+     <label class="color-opt" style="--c:#62a8e8"><input type="radio" name="zoneColor" value="#62a8e8"><span></span></label>
+     <label class="color-opt" style="--c:#d6b36b"><input type="radio" name="zoneColor" value="#d6b36b"><span></span></label>
+     <label class="color-opt" style="--c:#b386e8"><input type="radio" name="zoneColor" value="#b386e8"><span></span></label>
+     <label class="color-opt" style="--c:#e79a55"><input type="radio" name="zoneColor" value="#e79a55"><span></span></label>
+   </div></div>
+ </div>
+ <div class="dactions"><button class="btn close">Cancel</button><button class="btn primary" id="saveZoneBtn">Save Location</button></div>
+</dialog>
+
+<dialog id="subDialog">
+ <div class="dhead"><h3>Add Minimap Marker</h3><button class="btn close">×</button></div>
+ <div class="dbody">
+   <input id="subX" type="hidden"><input id="subY" type="hidden">
+   <div class="two"><label><div class="lab">Label</div><input id="subLabel"></label><label><div class="lab">Type</div><select id="subType"><option>Hidden Map</option><option>Exit</option><option>NPC</option><option>Boss</option><option>Quest</option><option>Note</option></select></label></div>
+   <label><div class="lab">Notes</div><textarea id="subNotes"></textarea></label>
+   <label><div class="lab">Dot color</div><select id="subColor"><option value="#d6b36b">Gold</option><option value="#65c887">Green</option><option value="#62a8e8">Blue</option><option value="#b386e8">Purple</option><option value="#e79a55">Orange</option></select></label>
+ </div>
+ <div class="dactions"><button class="btn close">Cancel</button><button class="btn primary" id="saveSubBtn">Save Marker</button></div>
+</dialog>
+
+<dialog id="workshopDialog">
+ <div class="dhead"><h3>Minimap Workshop</h3><button class="btn close">×</button></div>
+ <div class="dbody">
+   <div class="workshop-grid">
+     <div class="workshop-stage-wrap"><div class="workshop-stage"><canvas id="workCanvas"></canvas></div></div>
+     <div class="workshop-tools">
+       <div class="toolbox">
+         <h4>Source</h4>
+         <button class="btn primary full" id="workUploadBtn">Upload Screenshot</button>
+         <input id="workFile" type="file" accept="image/*" hidden>
+         <div class="note">Upload the raw in-game minimap screenshot.</div>
+       </div>
+       <div class="toolbox">
+         <h4>Automatic extraction</h4>
+         <button class="btn primary full" id="workExtractBtn">Extract Clean Minimap</button>
+         <div class="note">Crops UI, removes cyan/pink players, preserves green exits, and normalizes the map.</div>
+       </div>
+       <div class="toolbox">
+         <h4>Review</h4>
+         <div class="controls"><button class="btn" id="workResetBtn">Reset</button><button class="btn" id="showBeforeBtn">Before</button><button class="btn active" id="showAfterBtn">After</button></div>
+       </div>
+       <div class="toolbox">
+         <h4>Save</h4>
+         <button class="btn primary full" id="workSaveBtn">Use Cleaned Minimap</button>
+         <div class="workshop-status" id="workStatus">No workshop image loaded yet.</div>
+       </div>
+     </div>
+   </div>
+ </div>
+ <div class="dactions"><button class="btn close">Close</button></div>
+</dialog>
+
+<script src="js/migrations.js"></script>
+<script src="js/minimap-extractor.js"></script>
+<script src="js/seed-data.js"></script>
+<script src="js/atlas.js"></script>
+</body>
+</html>
