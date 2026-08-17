@@ -19,3 +19,10 @@ window.REMNANT_ATLAS_SEED = {
     }
   ]
 };
+
+window.addEventListener('load',()=>{
+  const script=document.createElement('script');
+  script.src='js/map-viewport-fix.js';
+  script.defer=true;
+  document.body.appendChild(script);
+});
