@@ -67,7 +67,6 @@ function setWorldZoom(value, clientX=null, clientY=null){
   worldZoom=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,Number(value.toFixed(3))));
   document.body.dataset.fitMode='false';
 
-  // Preserve the point under the mouse while ctrl/cmd-wheel zooming.
   let beforeX=0,beforeY=0;
   if(clientX!==null&&clientY!==null){
     const r=canvas.getBoundingClientRect();
@@ -93,7 +92,6 @@ function setWorldZoom(value, clientX=null, clientY=null){
 function fitWorldToScreen(){
   const wrap=$('worldWrap'), canvas=$('worldCanvas');
   if(!wrap||!canvas)return;
-  // Base canvas is 1000px wide with a fixed aspect ratio.
   const baseW=1000;
   const baseH=1000*(1056/1076);
   const availableW=Math.max(200,wrap.clientWidth-36);
@@ -107,6 +105,37 @@ function fitWorldToScreen(){
   wrap.scrollLeft=0;wrap.scrollTop=0;
   document.body.dataset.fitMode='true';
   localStorage.setItem('remnant-atlas-world-zoom',String(worldZoom));
+}
+
+function bindWorldPan(){
+  const wrap=$('worldWrap');
+  let pointerId=null,startX=0,startY=0,startLeft=0,startTop=0;
+
+  wrap.addEventListener('pointerdown',e=>{
+    if(e.button!==0) return;
+    if(e.target.closest('.world-map-controls,.world-dot,button,input,select,textarea,dialog')) return;
+    if(placingWorld) return;
+    pointerId=e.pointerId;
+    startX=e.clientX;startY=e.clientY;
+    startLeft=wrap.scrollLeft;startTop=wrap.scrollTop;
+    wrap.setPointerCapture(pointerId);
+    wrap.classList.add('panning');
+  });
+
+  wrap.addEventListener('pointermove',e=>{
+    if(pointerId===null || !wrap.hasPointerCapture(pointerId)) return;
+    wrap.scrollLeft=startLeft-(e.clientX-startX);
+    wrap.scrollTop=startTop-(e.clientY-startY);
+  });
+
+  const stopPan=()=>{
+    if(pointerId===null) return;
+    try{wrap.releasePointerCapture(pointerId)}catch{}
+    pointerId=null;
+    wrap.classList.remove('panning');
+  };
+  wrap.addEventListener('pointerup',stopPan);
+  wrap.addEventListener('pointercancel',stopPan);
 }
 
 function applyLabelMode(){document.body.classList.toggle('labels-hidden',!labelsVisible);$('labelToggleBtn').textContent=labelsVisible?'Hide Names':'Show Names';localStorage.setItem('remnant-atlas-labels-visible',String(labelsVisible))}
@@ -125,6 +154,7 @@ function bindStatic(){
    e.preventDefault();
    setWorldZoom(worldZoom+(e.deltaY<0?ZOOM_STEP:-ZOOM_STEP), e.clientX, e.clientY);
  },{passive:false});
+ bindWorldPan();
  window.addEventListener('resize',()=>{ if(document.body.dataset.fitMode==='true') fitWorldToScreen(); });
  $('adminBtn').onclick=()=>document.body.classList.contains('admin')?lockAdmin():$('adminDialog').showModal();
  $('unlockBtn').onclick=()=>{if($('pinInput').value===PIN){document.body.classList.add('admin');$('adminBtn').textContent='Exit Admin';$('pinInput').value='';$('adminDialog').close()}else{$('pinInput').value='';$('pinInput').placeholder='Incorrect PIN'}};
